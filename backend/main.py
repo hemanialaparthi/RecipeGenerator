@@ -12,6 +12,7 @@ app.config["SQLALCHEMY_TRACK_MODIFICATIONS"] = False
 
 db.init_app(app)
 
+# Route to set user preferences
 @app.route('/set_preferences', methods=['POST'])
 def set_preferences():
     data = request.get_json()
@@ -31,6 +32,7 @@ def set_preferences():
 
     return jsonify({"message": "Preferences saved successfully!"}), 201
 
+# Route to get a recipe based on user preferences
 @app.route('/get_recipe', methods=['GET'])
 def get_recipe():
     preference = UserPreference.query.order_by(UserPreference.id.desc()).first()
@@ -38,12 +40,9 @@ def get_recipe():
     if not preference:
         return jsonify({"message": "No preferences found"}), 404
 
-    api_url = "https://www.themealdb.com/api/json/v1/1/filter.php"
-    params = {
-        "c": preference.food_type,
-    }
-
-    response = requests.get(api_url, params=params)
+    api_url = f"https://www.themealdb.com/api/json/v1/1/filter.php?c={preference.food_type}"
+    
+    response = requests.get(api_url)
     if response.status_code != 200:
         return jsonify({"message": "Failed to fetch recipe"}), 500
 
