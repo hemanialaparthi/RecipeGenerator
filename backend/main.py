@@ -1,53 +1,66 @@
-from flask import Flask, request, jsonify
-from flask_sqlalchemy import SQLAlchemy
-from flask_cors import CORS
 import requests
-from models import UserPreference, db
 
-app = Flask(__name__)
-CORS(app)
+# generate recipe with given ingredients
+def generate_recipe(ingredients, diet, strict=2):
+    url = "https://recipe-generator-create-custom-recipes-from-your-ingredients.p.rapidapi.com/recipe"
+    payload = {
+        "ingredients": ingredients,
+        "strict": strict,
+        "diet": diet
+    }
+    headers = {
+        "x-rapidapi-key": "8f3eac1b80msh544acfc720c92c9p151248jsnda5d8c853936",
+        "x-rapidapi-host": "recipe-generator-create-custom-recipes-from-your-ingredients.p.rapidapi.com",
+        "Content-Type": "application/json"
+    }
+    response = requests.post(url, json=payload, headers=headers)
+    return response.json()
 
-app.config['SQLALCHEMY_DATABASE_URI'] = "sqlite:///friends.db"
-app.config["SQLALCHEMY_TRACK_MODIFICATIONS"] = False
+# generate the calories of the ingredients
+def calculate_calories(ingredients):
+    url = "https://nutrition-estimator-what-am-i-eating.p.rapidapi.com/api/nutrition_estimator/estimation"
+    payload = { "ingredients": ingredients }
+    headers = {
+        "x-rapidapi-key": "6160410e38msh4f71d07faa45339p134e64jsnec00fbf58dad",
+        "x-rapidapi-host": "nutrition-estimator-what-am-i-eating.p.rapidapi.com",
+        "Content-Type": "application/json"
+    }
+    response = requests.post(url, json=payload, headers=headers)
+    return response.json()
 
-db.init_app(app)
+# total calories
+def get_total_calories(calorie_info):
+    total_calories = sum(item.get('calories', 0) for item in calorie_info.get('items', []))
+    return total_calories
 
-# Route to set user preferences
-@app.route('/set_preferences', methods=['POST'])
-def set_preferences():
-    data = request.get_json()
-    food_type = data.get('food_type')
-    flavor_profile = data.get('flavor_profile')
-    meat_option = data.get('meat_option')
-    veggies_option = data.get('veggies_option')
+# 
 
-    user_preference = UserPreference(
-        food_type=food_type,
-        flavor_profile=flavor_profile,
-        meat_option=meat_option,
-        veggies_option=veggies_option
-    )
-    db.session.add(user_preference)
-    db.session.commit()
+# main function
+def main():
+    user_ingredients = input("Enter the ingredients you have: ")
+    diet_type = input("Enter your diet type (e.g., 'vegan', 'vegetarian', 'keto'): ")
 
-    return jsonify({"message": "Preferences saved successfully!"}), 201
+    print("Generating recipe...")
+    recipe_response = generate_recipe(user_ingredients, diet_type)
+    recipe = recipe_response['recipe']  # This assumes 'recipe' is a dictionary containing structured recipe information
 
-# Route to get a recipe based on user preferences
-@app.route('/get_recipe', methods=['GET'])
-def get_recipe():
-    preference = UserPreference.query.order_by(UserPreference.id.desc()).first()
+    # Print out the formatted recipe
+    print("\nRecipe generated:")
+    print(recipe)
 
-    if not preference:
-        return jsonify({"message": "No preferences found"}), 404
+    print("\nCalculating calories...")
+    calorie_info = calculate_calories(user_ingredients)
 
-    api_url = f"https://www.themealdb.com/api/json/v1/1/filter.php?c={preference.food_type}"
-    
-    response = requests.get(api_url)
-    if response.status_code != 200:
-        return jsonify({"message": "Failed to fetch recipe"}), 500
+    # Calculate total calories by extracting and converting relevant values
+    total_calories = sum(float(value.replace('kcal', '')) for key, value in calorie_info.items() if key == 'energy')
+    print(f"Total calories: {total_calories:.2f}")
 
-    recipe_data = response.json()
-    return jsonify(recipe_data), 200
+    show_breakdown = input("Do you want to see the breakdown of the calories? (yes/no): ").strip().lower()
+    if show_breakdown == 'yes':
+        print("Calorie breakdown:")
+        for key, value in calorie_info.items():
+            print(f"{key}: {value}")
 
 if __name__ == "__main__":
-    app.run(debug=True)
+    main()
+
