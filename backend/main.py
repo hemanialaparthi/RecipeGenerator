@@ -10,7 +10,7 @@ def generate_recipe(ingredients, diet, strict=2):
         "diet": diet
     }
     headers = {
-        "x-rapidapi-key": "aef0bc537amsh78ae44286ba3867p100f0ejsn1cb354c21648",
+        "x-rapidapi-key": "da4afab614mshd81d42243e1a5adp18e526jsnf77c316bf30e",
         "x-rapidapi-host": "recipe-generator-create-custom-recipes-from-your-ingredients.p.rapidapi.com",
         "Content-Type": "application/json"
     }
@@ -44,7 +44,7 @@ def calculate_calories(ingredients):
     url = "https://nutrition-estimator-what-am-i-eating.p.rapidapi.com/api/nutrition_estimator/estimation"
     payload = {"ingredients": formatted_ingredients}
     headers = {
-        "x-rapidapi-key": "aef0bc537amsh78ae44286ba3867p100f0ejsn1cb354c21648",
+        "x-rapidapi-key": "da4afab614mshd81d42243e1a5adp18e526jsnf77c316bf30e",
         "x-rapidapi-host": "nutrition-estimator-what-am-i-eating.p.rapidapi.com",
         "Content-Type": "application/json"
     }
@@ -66,10 +66,15 @@ def get_total_calories(calorie_info):
     if 'items' in calorie_info:
         total_calories = sum(item.get('calories', 0) for item in calorie_info['items'])
     elif 'energy' in calorie_info:
-        total_calories = float(calorie_info['energy'].replace('kcal', '').strip())
+        # Handle different formats of energy information
+        energy_value = calorie_info['energy']
+        if isinstance(energy_value, str) and energy_value.endswith('kcal'):
+            total_calories = float(energy_value.replace('kcal', '').strip())
+        elif isinstance(energy_value, (int, float)):
+            total_calories = float(energy_value)
     else:
         print("Unexpected calorie information format")
-        print(calorie_info)  # log the unexpected format for debugging
+        print(calorie_info)  # Log the unexpected format for debugging
 
     return total_calories
 
@@ -88,8 +93,6 @@ def main():
 
         # Extract ingredients from the generated recipe
         ingredients_list = extract_ingredients(recipe)
-        print("\nExtracted Ingredients:")
-        print(ingredients_list)
     else:
         print("Failed to generate recipe.")
         return
@@ -106,11 +109,9 @@ def main():
             print("Calorie breakdown:")
             if 'items' in calorie_info:
                 for item in calorie_info['items']:
-                    print(f"{item['name']}: {item['calories']} kcal")
+                    print(f"{item.get('name', 'Unknown')}: {item.get('calories', 0)} kcal")
             else:
-                for key, value in calorie_info.items():
-                    if isinstance(value, dict) and 'calories' in value:
-                        print(f"{key}: {value['calories']} kcal")
+                print(calorie_info)  # Print the entire calorie_info for debugging
     else:
         print("Failed to calculate calories.")
 
