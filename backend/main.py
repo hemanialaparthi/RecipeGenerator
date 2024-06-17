@@ -1,3 +1,4 @@
+"""Program that generates recipes with ingredients available and calculates calories of the meal."""
 import requests
 
 # generate recipe with given ingredients
@@ -65,11 +66,10 @@ def get_total_calories(calorie_info):
     if 'items' in calorie_info:
         total_calories = sum(item.get('calories', 0) for item in calorie_info['items'])
     elif 'energy' in calorie_info:
-        # Assume that the energy is in kcal and is a string ending with 'kcal'
         total_calories = float(calorie_info['energy'].replace('kcal', '').strip())
     else:
         print("Unexpected calorie information format")
-        print(calorie_info)  # Log the unexpected format for debugging
+        print(calorie_info)  # log the unexpected format for debugging
 
     return total_calories
 
@@ -116,4 +116,3 @@ def main():
 
 if __name__ == "__main__":
     main()
-
