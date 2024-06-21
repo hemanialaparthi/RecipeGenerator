@@ -3,6 +3,7 @@ import requests
 
 # generate recipe with given ingredients
 def generate_recipe(ingredients, diet, strict=2):
+
     url = "https://recipe-generator-create-custom-recipes-from-your-ingredients.p.rapidapi.com/recipe"
     payload = {
         "ingredients": ingredients,
@@ -66,7 +67,7 @@ def get_total_calories(calorie_info):
     if 'items' in calorie_info:
         total_calories = sum(item.get('calories', 0) for item in calorie_info['items'])
     elif 'energy' in calorie_info:
-        # Handle different formats of energy information
+        # handle different formats of energy information
         energy_value = calorie_info['energy']
         if isinstance(energy_value, str) and energy_value.endswith('kcal'):
             total_calories = float(energy_value.replace('kcal', '').strip())
@@ -74,24 +75,47 @@ def get_total_calories(calorie_info):
             total_calories = float(energy_value)
     else:
         print("Unexpected calorie information format")
-        print(calorie_info)  # Log the unexpected format for debugging
+        print(calorie_info)  # log the unexpected format for debugging
 
     return total_calories
 
 # main function
 def main():
     user_ingredients = input("Enter the ingredients you have: ")
-    diet_type = input("Enter your diet type (e.g., 'vegan', 'vegetarian', 'keto'): ")
+    diet_type = input("Enter your diet type (e.g., 'vegan', 'vegetarian', 'keto', 'gluten_free'):\n ")
+    strictness = input("Would you like to change the strictness of you diet?\n 1. yes \n 2. no \n 3. find out more.\n")
+    if strictness.lower() == "1":
+        print("""
+        0 - API will craft a recipe using the provided ingredients but may include additional ingredients if needed.
+        1 - API will only use the provided ingredients in the recipe.
+        2 - API will strictly use the provided ingredients but may recommend additional ingredients for better results. (This is the default setting)\n
+        """)
+        try:
+            strictness = int(input("Enter the strictness level (0, 1, 2):\n"))
+            if strictness < 0 or strictness > 2:
+                raise ValueError("Strictness level must be between 0 and 2. Defaulting to 2 (moderate).\n")
+        except ValueError as e:
+            print(e)
+            strictness = 2
+    elif strictness.lower() == '2':
+        strictness = 2
+    elif strictness.lower() == '3':
+        print("""""
+        This program uses an API which allowes users to select the strictness of the ingredients. 
+        0 - API will craft a recipe using the provided ingredients but may include additional ingredients if needed.
+        1 - API will only use the provided ingredients in the recipe.
+        2 - API will strictly use the provided ingredients but may recommend additional ingredients for better results. (This is the default setting).\n
+        """)
 
-    print("Generating recipe...")
-    recipe_response = generate_recipe(user_ingredients, diet_type)
-    
+    print("Generating the recipe...")
+    recipe_response = generate_recipe(user_ingredients, diet_type, strictness)
+
     if recipe_response and 'recipe' in recipe_response:
         recipe = recipe_response['recipe']
         print("\nRecipe generated:")
         print(recipe)
 
-        # Extract ingredients from the generated recipe
+        # extract ingredients from the generated recipe
         ingredients_list = extract_ingredients(recipe)
     else:
         print("Failed to generate recipe.")
@@ -104,14 +128,14 @@ def main():
         total_calories = get_total_calories(calorie_info)
         print(f"Total calories: {total_calories:.2f}")
 
-        show_breakdown = input("Do you want to see the breakdown of the calories? (y/n): ").strip().lower()
-        if show_breakdown == 'y':
+        show_breakdown = input("Do you want to see the breakdown of the calories? (yes/no): ").strip().lower()
+        if show_breakdown == 'yes':
             print("Calorie breakdown:")
             if 'items' in calorie_info:
                 for item in calorie_info['items']:
                     print(f"{item.get('name', 'Unknown')}: {item.get('calories', 0)} kcal")
             else:
-                print(calorie_info)  # Print the entire calorie_info for debugging
+                print(calorie_info)  # print the entire calorie_info for debugging
     else:
         print("Failed to calculate calories.")
 
